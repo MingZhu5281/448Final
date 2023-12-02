@@ -8,32 +8,32 @@ import os
 import time
 
 
-# 定义数据预处理操作，这些变换将应用于每一张图片
+# Define data preprocessing operations, these transformations will be applied to each image
 data_transforms = transforms.Compose([
-    transforms.Resize(size=(100, 100)),  # 将图片缩放至100x100大小
-    transforms.Transpose(),  # 将图片从高度x宽度x通道数(HWC)格式转换为通道数x高度x宽度(CHW)格式
+    transforms.Resize(size=(100, 100)),  # Resize the image to 100x100 size
+    transforms.Transpose(),  # Convert the image from HWC to CHW format
     transforms.Normalize(
-        mean=[0, 0, 0],  # 设置归一化的均值
-        std=[255, 255, 255],  # 设置归一化的标准差
-        to_rgb=True)  # 确保图片为RGB格式
+        mean=[0, 0, 0],  # Set the normalization mean
+        std=[255, 255, 255],  # Set the normalization standard deviation
+        to_rgb=True)  # Ensure the image is in RGB format
 ])
 
 class Fruits360(DatasetFolder):
     def __init__(self, path):
-        # 初始化父类DatasetFolder，path为图片数据集的路径
+        # Initialize the parent class DatasetFolder, path is the path to the image dataset
         super().__init__(path)
 
     def __getitem__(self, index):
-        # 根据索引获取图片路径和对应的标签
+        # Get the image path and corresponding label by index
         img_path, label = self.samples[index]
-        # 使用Pillow库打开图片
+        # Open the image using PIL library
         img = Image.open(img_path)
-        # 将标签转换为numpy数组，并将其类型设置为int64
+        # Convert the label to a numpy array and set its type to int64
         label = np.array([label]).astype(np.int64)
-        # 返回经过预处理的图片和标签
+        # Return the preprocessed image and label
         return data_transforms(img), label
 
-# 指定训练集和测试集的路径
+# Specify the paths for the training and test datasets
 train_dataset_path = r"archive\fruits-360_dataset\fruits-360\Training"
 test_dataset_path = r"archive\fruits-360_dataset\fruits-360\Test"
 # Adjust the class definition and initialization if necessary
@@ -67,7 +67,7 @@ class MyCNN(paddle.nn.Layer):
         self.out = paddle.nn.Linear(in_features=256, out_features=131)
 
 
-    # forward 定义执行实际运行时网络的执行逻辑
+    # forward defines the execution logic of the network during actual runtime.
     def forward(self,x):
         # input.shape (batch_size, 3, 100, 100)
         x = self.conv1(x)
@@ -86,8 +86,8 @@ class MyCNN(paddle.nn.Layer):
         x = paddle.nn.functional.relu(x)
         x = self.pool4(x)
 
-        # x = paddle.reshape(x, [-1, x.shape[1] * x.shape[2] * x.shape[3]]) #reshape2算子
-        x = self.flatten(x) # Lite目前不支持该算子
+        # x = paddle.reshape(x, [-1, x.shape[1] * x.shape[2] * x.shape[3]]) 
+        x = self.flatten(x)
 
         x = self.linear1(x)
         x = paddle.nn.functional.relu(x)
@@ -97,7 +97,7 @@ class MyCNN(paddle.nn.Layer):
 
         return x
 
-# 模型结构可视化
+# Visualize the model structure
 paddle.summary(MyCNN(), (1, 3, 100, 100))
 
 
@@ -113,21 +113,21 @@ input_data = paddle.randn([60, 3, 100, 100])
 model = paddle.Model(MyCNN(), inputs=[paddle.static.InputSpec(shape=[-1, 3, 100, 100], dtype='float32', name='x')])
 # Continue with your existing code for model.prepare(), etc.
 
-# 模型训练相关配置，准备损失计算方法，优化器和精度计算方法
+# Model training-related configuration, prepare the loss computation method, optimizer, and accuracy calculation method
 model.prepare(paddle.optimizer.Adam(learning_rate=1e-3, parameters=model.parameters()),
               paddle.nn.CrossEntropyLoss(),
               paddle.metric.Accuracy())
 
-# 模型训练
+# Model training
 model.fit(train_dataset,
             epochs=5,
             batch_size=60,
             verbose=1)
 
-# 模型预估
+# Model evaluation
 model.evaluate(test_dataset, batch_size=30, verbose=1)
 
-# 保存模型参数
+# Save model parameters
 model.save('Hapi_MyCNN')  # save for training
 model.save('Hapi_MyCNN', False)  # save for inference
 
@@ -154,9 +154,9 @@ def infer_img(path, model_file_path, use_gpu):
         img = paddle.to_tensor(dy_x_data)
         out = model(img)
 
-        # print(paddle.nn.functional.softmax(out)[0]) # 手动在预测时加上softmax，输出score时比较直观。
+        # print(paddle.nn.functional.softmax(out)[0])
 
-        lab = np.argmax(out.numpy())  #argmax():返回最大数的索引
+        lab = np.argmax(out.numpy())  #argmax(): returns the index of the largest number.
         print("样本: {},被预测为:{}".format(path, label_list[lab]))
 
     print("*********************************************")
@@ -164,7 +164,7 @@ def infer_img(path, model_file_path, use_gpu):
     image_path = []
 
     for root, dirs, files in os.walk('work/'):
-        # 遍历work/文件夹内图片
+        # # Traverse the images in the work/ folder
         for f in files:
             image_path.append(os.path.join(root, f))
 
